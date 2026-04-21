@@ -5,38 +5,68 @@ import 'package:flutter/services.dart';
 import '../controllers/feve_session_controller.dart';
 import '../models/frame_metrics.dart';
 import '../models/segmentation_result.dart';
+import '../services/image_picker_service.dart';
 import '../services/segmentation_service.dart';
 
 class SegmentationViewModel extends ChangeNotifier {
   SegmentationViewModel({
     SegmentationService? segmentationService,
     FeveSessionController? feveSessionController,
+    ImagePickerService? imagePickerService,
   }) : _segmentationService = segmentationService ?? SegmentationService(),
-       _feveSessionController = feveSessionController ?? FeveSessionController();
+       _feveSessionController =
+           feveSessionController ?? FeveSessionController(),
+       _imagePickerService = imagePickerService ?? ImagePickerService();
 
   final SegmentationService _segmentationService;
   final FeveSessionController _feveSessionController;
+  final ImagePickerService _imagePickerService;
 
   int _currentFrame = 0;
-  final int _maxFrames = 12;
+  List<PickedImageData> _selectedImages = [];
   ui.Image? _maskImage;
   String? _lastViewClass;
   final Map<int, FrameMetrics> _metricsByFrame = {};
   bool _isLoading = false;
 
   int get currentFrame => _currentFrame;
-  int get maxFrames => _maxFrames;
+  int get maxFrames => _selectedImages.isEmpty ? 0 : _selectedImages.length - 1;
+  int get selectedImagesCount => _selectedImages.length;
+  bool get hasSelectedImages => _selectedImages.isNotEmpty;
   ui.Image? get maskImage => _maskImage;
   String? get lastViewClass => _lastViewClass;
   int? get currentFrameMaskArea => _metricsByFrame[_currentFrame]?.maskArea;
-  int? get currentFrameInferenceMs => _metricsByFrame[_currentFrame]?.inferenceMs;
+  int? get currentFrameInferenceMs =>
+      _metricsByFrame[_currentFrame]?.inferenceMs;
   bool get isLoading => _isLoading;
+  String? get currentImageName =>
+      hasSelectedImages ? _selectedImages[_currentFrame].name : null;
 
-  String getCurrentAssetPath() =>
-      'assets/feve_images/patient0451_2CH_frame${_currentFrame}_img.png';
+  Future<bool> pickImages() async {
+    final pickedImages = await _imagePickerService.pickImages();
+    if (pickedImages.isEmpty) {
+      return false;
+    }
+
+    _selectedImages = pickedImages;
+    _currentFrame = 0;
+    _maskImage = null;
+    _lastViewClass = null;
+    _metricsByFrame.clear();
+    _feveSessionController.clearSession();
+    notifyListeners();
+    return true;
+  }
+
+  Uint8List? getCurrentImageBytes() {
+    if (!hasSelectedImages) {
+      return null;
+    }
+    return _selectedImages[_currentFrame].bytes;
+  }
 
   void nextFrame() {
-    if (_currentFrame < _maxFrames) {
+    if (_currentFrame < maxFrames) {
       _currentFrame++;
       _maskImage = null;
       notifyListeners();
@@ -52,17 +82,24 @@ class SegmentationViewModel extends ChangeNotifier {
   }
 
   Future<void> segmentCurrentImage(BuildContext context) async {
+    final imageBytes = getCurrentImageBytes();
+    if (imageBytes == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecione pelo menos uma imagem para segmentar.'),
+          ),
+        );
+      }
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
     try {
-      final byteData = await rootBundle.load(getCurrentAssetPath());
-      final imageBytes = byteData.buffer.asUint8List();
-
       final SegmentationResult? segmentationResult = await _segmentationService
-          .segmentImage(
-        imageBytes,
-      );
+          .segmentImage(imageBytes);
 
       if (segmentationResult != null) {
         final maskArea = _countMaskArea(segmentationResult.maskBytes);

@@ -22,11 +22,23 @@ class ImageDisplayWidget extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.asset(
-                  segmentationViewModel.getCurrentAssetPath(),
-                  fit: BoxFit.cover,
-                  gaplessPlayback: true,
-                ),
+                if (segmentationViewModel.hasSelectedImages)
+                  Image.memory(
+                    segmentationViewModel.getCurrentImageBytes()!,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  )
+                else
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Selecione imagens para iniciar',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ),
                 if (segmentationViewModel.maskImage != null)
                   RawImage(
                     image: segmentationViewModel.maskImage,

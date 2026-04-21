@@ -10,7 +10,9 @@ class SegmentationButtonWidget extends StatelessWidget {
     return Consumer<SegmentationViewModel>(
       builder: (context, segmentationViewModel, child) {
         return FilledButton.icon(
-          onPressed: segmentationViewModel.isLoading
+          onPressed:
+              segmentationViewModel.isLoading ||
+                  !segmentationViewModel.hasSelectedImages
               ? null
               : () => segmentationViewModel.segmentCurrentImage(context),
           icon: const Icon(Icons.analytics),

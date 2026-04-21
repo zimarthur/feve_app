@@ -46,10 +46,23 @@ class _SegmentationScreenState extends State<SegmentationScreen> {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: segmentationViewModel.isLoading
+                  ? null
+                  : () => _pickImages(context),
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Selecionar imagens'),
+            ),
+            const SizedBox(height: 8),
             Text(
-              'Frame ${segmentationViewModel.currentFrame} de ${segmentationViewModel.maxFrames}',
+              'Frame ${_displayFrame(segmentationViewModel)} de ${segmentationViewModel.selectedImagesCount}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
+            if (segmentationViewModel.currentImageName != null)
+              Text(
+                segmentationViewModel.currentImageName!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             const SizedBox(height: 8),
             Text(
               'Tempo inferência (frame atual): ${_formatInferenceMs(segmentationViewModel.currentFrameInferenceMs)}',
@@ -101,5 +114,23 @@ class _SegmentationScreenState extends State<SegmentationScreen> {
       return '-';
     }
     return '$value px';
+  }
+
+  Future<void> _pickImages(BuildContext context) async {
+    final segmentationViewModel = context.read<SegmentationViewModel>();
+    final didPick = await segmentationViewModel.pickImages();
+    if (!context.mounted || didPick) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Nenhuma imagem selecionada.')),
+    );
+  }
+
+  int _displayFrame(SegmentationViewModel segmentationViewModel) {
+    if (!segmentationViewModel.hasSelectedImages) {
+      return 0;
+    }
+    return segmentationViewModel.currentFrame + 1;
   }
 }
