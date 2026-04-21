@@ -1,21 +1,35 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../controllers/feve_session_controller.dart';
+import '../models/frame_metrics.dart';
+import '../models/segmentation_result.dart';
 import '../services/segmentation_service.dart';
 
 class SegmentationViewModel extends ChangeNotifier {
-  final SegmentationService _segmentationService = SegmentationService();
+  SegmentationViewModel({
+    SegmentationService? segmentationService,
+    FeveSessionController? feveSessionController,
+  }) : _segmentationService = segmentationService ?? SegmentationService(),
+       _feveSessionController = feveSessionController ?? FeveSessionController();
+
+  final SegmentationService _segmentationService;
+  final FeveSessionController _feveSessionController;
 
   int _currentFrame = 0;
   final int _maxFrames = 12;
   ui.Image? _maskImage;
+  String? _lastViewClass;
+  final Map<int, FrameMetrics> _metricsByFrame = {};
   bool _isLoading = false;
 
   int get currentFrame => _currentFrame;
   int get maxFrames => _maxFrames;
   ui.Image? get maskImage => _maskImage;
+  String? get lastViewClass => _lastViewClass;
+  int? get currentFrameMaskArea => _metricsByFrame[_currentFrame]?.maskArea;
+  int? get currentFrameInferenceMs => _metricsByFrame[_currentFrame]?.inferenceMs;
   bool get isLoading => _isLoading;
 
   String getCurrentAssetPath() =>
@@ -45,12 +59,28 @@ class SegmentationViewModel extends ChangeNotifier {
       final byteData = await rootBundle.load(getCurrentAssetPath());
       final imageBytes = byteData.buffer.asUint8List();
 
-      final Uint8List? maskBytes = await _segmentationService.segmentImage(
+      final SegmentationResult? segmentationResult = await _segmentationService
+          .segmentImage(
         imageBytes,
       );
 
-      if (maskBytes != null) {
-        final uiImage = await _createMaskImage(maskBytes, 256, 256);
+      if (segmentationResult != null) {
+        final maskArea = _countMaskArea(segmentationResult.maskBytes);
+        _metricsByFrame[_currentFrame] = FrameMetrics(
+          maskArea: maskArea,
+          inferenceMs: segmentationResult.inferenceMs,
+        );
+        _lastViewClass = segmentationResult.viewClass;
+        _feveSessionController.addRecord(
+          frameIndex: _currentFrame,
+          viewClass: segmentationResult.viewClass,
+          maskBytes: segmentationResult.maskBytes,
+        );
+        final uiImage = await _createMaskImage(
+          segmentationResult.maskBytes,
+          256,
+          256,
+        );
         _maskImage = uiImage;
       }
     } on PlatformException catch (e) {
@@ -90,5 +120,15 @@ class SegmentationViewModel extends ChangeNotifier {
     );
 
     return completer.future;
+  }
+
+  int _countMaskArea(Uint8List maskBytes) {
+    var area = 0;
+    for (final pixel in maskBytes) {
+      if (pixel > 0) {
+        area++;
+      }
+    }
+    return area;
   }
 }

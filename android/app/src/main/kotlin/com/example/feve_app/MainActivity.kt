@@ -1,5 +1,6 @@
 package com.example.feve_app
 
+import android.os.SystemClock
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -43,16 +44,21 @@ class MainActivity: FlutterActivity() {
                     }
                 }
                 "segmentImage" -> {
-                    // Recebendo o array de bytes (Uint8List no Dart)
                     val imageBytes = call.argument<ByteArray>("imageBytes")
 
                     if (imageBytes != null) {
                         scope.launch {
                             try {
-                                // Retorna um ByteArray de tamanho 65536 (256x256)
+                                val inferenceStartTimeMs = SystemClock.uptimeMillis()
                                 val maskBytes = segmentationHelper.segment(imageBytes)
+                                val inferenceMs = SystemClock.uptimeMillis() - inferenceStartTimeMs
                                 if (maskBytes != null) {
-                                    result.success(maskBytes)
+                                    val response = mapOf(
+                                        "maskBytes" to maskBytes,
+                                        "viewClass" to mockViewClass(imageBytes),
+                                        "inferenceMs" to inferenceMs
+                                    )
+                                    result.success(response)
                                 } else {
                                     result.error("DECODE_ERROR", "Não foi possível decodificar a imagem a partir dos bytes fornecidos.", null)
                                 }
@@ -67,6 +73,12 @@ class MainActivity: FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    private fun mockViewClass(imageBytes: ByteArray): String {
+        if (imageBytes.isEmpty()) return "A2C"
+        val firstByteParity = imageBytes[0].toInt() and 1
+        return if (firstByteParity == 0) "A2C" else "A4C"
     }
 
     override fun onDestroy() {

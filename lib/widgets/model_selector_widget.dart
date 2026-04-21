@@ -12,28 +12,29 @@ class ModelSelectorWidget extends StatelessWidget {
         if (modelViewModel.modelNames.isEmpty) {
           return const CircularProgressIndicator();
         }
-        return Wrap(
-          spacing: 8.0,
-          children: modelViewModel.modelNames.map((modelName) {
-            return ElevatedButton(
-              onPressed: modelViewModel.selectedModel == modelName
-                  ? null
-                  : () => modelViewModel.selectModel(modelName),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: modelViewModel.selectedModel == modelName
-                    ? Colors.blue
-                    : Colors.white,
-              ),
-              child: Text(
-                modelName,
-                style: TextStyle(
-                  color: modelViewModel.selectedModel == modelName
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            );
-          }).toList(),
+        return SizedBox(
+          width: 320,
+          child: DropdownButtonFormField<String>(
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Modelo de segmentação',
+            ),
+            initialValue: modelViewModel.selectedModel,
+            items: modelViewModel.modelNames
+                .map(
+                  (modelName) => DropdownMenuItem<String>(
+                    value: modelName,
+                    child: Text(modelName),
+                  ),
+                )
+                .toList(),
+            onChanged: (selectedValue) {
+              if (selectedValue != null &&
+                  selectedValue != modelViewModel.selectedModel) {
+                modelViewModel.selectModel(selectedValue);
+              }
+            },
+          ),
         );
       },
     );

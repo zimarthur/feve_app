@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'dart:typed_data';
+import '../models/segmentation_result.dart';
 
 class SegmentationService {
   static const platform = MethodChannel('feve_channel');
@@ -11,7 +12,7 @@ class SegmentationService {
       );
       return modelNames.cast<String>();
     } on PlatformException catch (e) {
-      print("Erro ao obter nomes dos modelos: '${e.message}'.");
+      debugPrint("Erro ao obter nomes dos modelos: '${e.message}'.");
       return [];
     }
   }
@@ -20,20 +21,38 @@ class SegmentationService {
     try {
       await platform.invokeMethod('selectModel', {'modelName': modelName});
     } on PlatformException catch (e) {
-      print("Erro ao selecionar modelo: '${e.message}'.");
+      debugPrint("Erro ao selecionar modelo: '${e.message}'.");
     }
   }
 
-  Future<Uint8List?> segmentImage(Uint8List imageBytes) async {
+  Future<SegmentationResult?> segmentImage(Uint8List imageBytes) async {
     try {
-      // Envia os bytes para o Android nativo
-      final Uint8List? maskBytes = await platform.invokeMethod('segmentImage', {
+      final Map<dynamic, dynamic>? payload = await platform.invokeMethod(
+        'segmentImage',
+        {
         'imageBytes': imageBytes,
-      });
+      },
+      );
 
-      return maskBytes;
+      if (payload == null) {
+        return null;
+      }
+
+      final Uint8List? maskBytes = payload['maskBytes'] as Uint8List?;
+      final String? viewClass = payload['viewClass'] as String?;
+      final int? inferenceMs = (payload['inferenceMs'] as num?)?.toInt();
+
+      if (maskBytes == null || viewClass == null || inferenceMs == null) {
+        return null;
+      }
+
+      return SegmentationResult(
+        maskBytes: maskBytes,
+        viewClass: viewClass,
+        inferenceMs: inferenceMs,
+      );
     } on PlatformException catch (e) {
-      print("Erro na segmentação: '${e.message}'.");
+      debugPrint("Erro na segmentação: '${e.message}'.");
       return null;
     }
   }

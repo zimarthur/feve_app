@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'controllers/feve_session_controller.dart';
 import 'viewmodels/model_view_model.dart';
 import 'viewmodels/segmentation_view_model.dart';
 import 'views/segmentation_screen.dart';
@@ -16,7 +17,12 @@ class FeveApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ModelViewModel()),
-        ChangeNotifierProvider(create: (_) => SegmentationViewModel()),
+        ChangeNotifierProvider(create: (_) => FeveSessionController()),
+        ChangeNotifierProvider(
+          create: (context) => SegmentationViewModel(
+            feveSessionController: context.read<FeveSessionController>(),
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'Segmentação de Ventrículo',

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../controllers/feve_session_controller.dart';
+import '../models/feve_min_max.dart';
 import '../viewmodels/model_view_model.dart';
 import '../viewmodels/segmentation_view_model.dart';
 import '../widgets/model_selector_widget.dart';
@@ -25,6 +27,9 @@ class _SegmentationScreenState extends State<SegmentationScreen> {
   @override
   Widget build(BuildContext context) {
     final segmentationViewModel = context.watch<SegmentationViewModel>();
+    final feveSessionController = context.watch<FeveSessionController>();
+    final a2cExtrema = feveSessionController.getExtremaForView('A2C');
+    final a4cExtrema = feveSessionController.getExtremaForView('A4C');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Análise de Ultrassom 2CH'),
@@ -37,8 +42,35 @@ class _SegmentationScreenState extends State<SegmentationScreen> {
             const ModelSelectorWidget(),
             const SizedBox(height: 16),
             Text(
+              'Classe mockada atual: ${segmentationViewModel.lastViewClass ?? '-'}',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
               'Frame ${segmentationViewModel.currentFrame} de ${segmentationViewModel.maxFrames}',
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tempo inferência (frame atual): ${_formatInferenceMs(segmentationViewModel.currentFrameInferenceMs)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'Área máscara (frame atual): ${_formatMaskArea(segmentationViewModel.currentFrameMaskArea)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Registros FEVE: ${feveSessionController.records.length}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'A2C min/max: ${_formatExtrema(a2cExtrema)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            Text(
+              'A4C min/max: ${_formatExtrema(a4cExtrema)}',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             const FrameNavigatorWidget(),
@@ -48,5 +80,26 @@ class _SegmentationScreenState extends State<SegmentationScreen> {
         ),
       ),
     );
+  }
+
+  String _formatExtrema(FeveMinMax? extrema) {
+    if (extrema == null) {
+      return '-';
+    }
+    return '${extrema.minRecord.maskArea} (f${extrema.minRecord.frameIndex}) / ${extrema.maxRecord.maskArea} (f${extrema.maxRecord.frameIndex})';
+  }
+
+  String _formatInferenceMs(int? value) {
+    if (value == null) {
+      return '-';
+    }
+    return '$value ms';
+  }
+
+  String _formatMaskArea(int? value) {
+    if (value == null) {
+      return '-';
+    }
+    return '$value px';
   }
 }
