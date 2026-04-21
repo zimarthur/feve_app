@@ -72,6 +72,10 @@ class _SegmentationScreenState extends State<SegmentationScreen> {
               'Área máscara (frame atual): ${_formatMaskArea(segmentationViewModel.currentFrameMaskArea)}',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
+            Text(
+              'Janela (frame atual): ${segmentationViewModel.currentFrameWindow ?? "-"}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             const SizedBox(height: 8),
             Text(
               'Registros FEVE: ${feveSessionController.records.length}',

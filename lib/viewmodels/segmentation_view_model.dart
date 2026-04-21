@@ -36,6 +36,7 @@ class SegmentationViewModel extends ChangeNotifier {
   ui.Image? get maskImage => _maskImage;
   String? get lastViewClass => _lastViewClass;
   int? get currentFrameMaskArea => _metricsByFrame[_currentFrame]?.maskArea;
+  String? get currentFrameWindow => _metricsByFrame[_currentFrame]?.window;
   int? get currentFrameInferenceMs =>
       _metricsByFrame[_currentFrame]?.inferenceMs;
   bool get isLoading => _isLoading;
@@ -106,6 +107,7 @@ class SegmentationViewModel extends ChangeNotifier {
         _metricsByFrame[_currentFrame] = FrameMetrics(
           maskArea: maskArea,
           inferenceMs: segmentationResult.inferenceMs,
+          window: segmentationResult.viewClass,
         );
         _lastViewClass = segmentationResult.viewClass;
         _feveSessionController.addRecord(

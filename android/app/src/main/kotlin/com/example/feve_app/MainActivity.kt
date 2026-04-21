@@ -50,12 +50,14 @@ class MainActivity: FlutterActivity() {
                         scope.launch {
                             try {
                                 val inferenceStartTimeMs = SystemClock.uptimeMillis()
-                                val maskBytes = segmentationHelper.segment(imageBytes)
+                                // Agora o segment retorna um objeto com a máscara e a classe
+                                val inferenceResult = segmentationHelper.segment(imageBytes)
                                 val inferenceMs = SystemClock.uptimeMillis() - inferenceStartTimeMs
-                                if (maskBytes != null) {
+                                
+                                if (inferenceResult != null) {
                                     val response = mapOf(
-                                        "maskBytes" to maskBytes,
-                                        "viewClass" to mockViewClass(imageBytes),
+                                        "maskBytes" to inferenceResult.maskBytes,
+                                        "viewClass" to inferenceResult.viewClass,
                                         "inferenceMs" to inferenceMs
                                     )
                                     result.success(response)
@@ -73,12 +75,6 @@ class MainActivity: FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-    }
-
-    private fun mockViewClass(imageBytes: ByteArray): String {
-        if (imageBytes.isEmpty()) return "A2C"
-        val firstByteParity = imageBytes[0].toInt() and 1
-        return if (firstByteParity == 0) "A2C" else "A4C"
     }
 
     override fun onDestroy() {
