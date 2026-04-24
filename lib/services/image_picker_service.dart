@@ -2,12 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
-class PickedImageData {
-  PickedImageData({required this.name, required this.bytes});
-
-  final String name;
-  final Uint8List bytes;
-}
+import '../models/picked_image_data.dart';
 
 class ImagePickerService {
   static const List<String> _allowedExtensions = ['png', 'jpg', 'jpeg', 'webp'];

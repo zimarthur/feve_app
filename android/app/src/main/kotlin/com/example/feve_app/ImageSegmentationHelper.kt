@@ -14,7 +14,7 @@ import kotlinx.coroutines.withContext
 data class Model(val name: String, val path: String, val size: Int)
 
 // Nova estrutura de dados para o retorno duplo
-data class SegmentationResult(val maskBytes: ByteArray, val viewClass: String)
+data class SegmentationResult(val maskBytes: ByteArray, val maskArea: Int, val viewClass: String, val inferenceTime: Long )
 
 class ImageSegmentationHelper(private val context: Context) {
     // Assumindo apenas o modelo novo conforme solicitado
@@ -124,7 +124,7 @@ class ImageSegmentationHelper(private val context: Context) {
             val totalTime = SystemClock.uptimeMillis() - totalStartTime
             Log.d(tag, "Tempo TOTAL: $totalTime ms")
 
-            return SegmentationResult(maskBytes, predictedClass)
+            return SegmentationResult(maskBytes.maskBytes,maskBytes.area, predictedClass, totalTime)
         }
 
         private fun normalizeToGrayscale(image: Bitmap): FloatArray {
@@ -143,12 +143,30 @@ class ImageSegmentationHelper(private val context: Context) {
             return outputFloatArray
         }
 
-        private fun processMask(outputFloatArray: FloatArray, numPixels: Int): ByteArray {
-            val mask = ByteArray(numPixels)
+        private fun processMask(outputFloatArray: FloatArray, numPixels: Int): MaskData {
+            var totalArea = 0
+            val mask = ByteArray(numPixels * 4)
+            var offset = 0
+
             for (i in 0 until numPixels) {
-                mask[i] = if (outputFloatArray[i] > 0.5f) 255.toByte() else 0.toByte()
+                if (outputFloatArray[i] > 0.5f) {
+                    totalArea++
+
+                    mask[offset] = 0.toByte()
+                    mask[offset + 1] = 0.toByte()
+                    mask[offset + 2] = 128.toByte()
+                    mask[offset + 3] = 128.toByte()
+                } else {
+
+                    mask[offset] = 0.toByte()
+                    mask[offset + 1] = 0.toByte()
+                    mask[offset + 2] = 0.toByte()
+                    mask[offset + 3] = 0.toByte()
+                }
+                offset += 4
             }
-            return mask
+
+            return MaskData(mask, totalArea)
         }
     }
 }

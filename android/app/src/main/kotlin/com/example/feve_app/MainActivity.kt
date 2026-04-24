@@ -49,16 +49,14 @@ class MainActivity: FlutterActivity() {
                     if (imageBytes != null) {
                         scope.launch {
                             try {
-                                val inferenceStartTimeMs = SystemClock.uptimeMillis()
-                                // Agora o segment retorna um objeto com a máscara e a classe
                                 val inferenceResult = segmentationHelper.segment(imageBytes)
-                                val inferenceMs = SystemClock.uptimeMillis() - inferenceStartTimeMs
-                                
+
                                 if (inferenceResult != null) {
                                     val response = mapOf(
                                         "maskBytes" to inferenceResult.maskBytes,
                                         "viewClass" to inferenceResult.viewClass,
-                                        "inferenceMs" to inferenceMs
+                                        "inferenceMs" to inferenceResult.inferenceTime,
+                                        "maskArea" to inferenceResult.maskArea,
                                     )
                                     result.success(response)
                                 } else {

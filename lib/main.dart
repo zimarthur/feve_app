@@ -1,9 +1,12 @@
+import 'package:feve_app/services/segmentation_service.dart';
+import 'package:feve_app/viewmodels/feve_session_view_model.dart';
+import 'package:feve_app/viewmodels/frames_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'controllers/feve_session_controller.dart';
+import 'services/image_picker_service.dart';
 import 'viewmodels/model_view_model.dart';
-import 'viewmodels/segmentation_view_model.dart';
-import 'views/segmentation_screen.dart';
+import 'views/feve_run_screen.dart';
+import 'views/home_screen.dart';
 
 void main() {
   runApp(const FeveApp());
@@ -16,11 +19,20 @@ class FeveApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ModelViewModel()),
-        ChangeNotifierProvider(create: (_) => FeveSessionController()),
+        Provider<SegmentationService>(create: (_) => SegmentationService()),
+        Provider<ImagePickerService>(create: (_) => ImagePickerService()),
         ChangeNotifierProvider(
-          create: (context) => SegmentationViewModel(
-            feveSessionController: context.read<FeveSessionController>(),
+          create: (context) =>
+              ModelViewModel(context.read<SegmentationService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              FramesViewModel(context.read<ImagePickerService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => FeveSessionViewModel(
+            context.read<FramesViewModel>(),
+            context.read<SegmentationService>(),
           ),
         ),
       ],
@@ -28,9 +40,13 @@ class FeveApp extends StatelessWidget {
         title: 'Segmentação de Ventrículo',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          fontFamily: 'Montserrat',
           useMaterial3: true,
         ),
-        home: const SegmentationScreen(),
+        routes: {
+          '/': (context) => const HomeScreen(),
+          '/feve-run': (context) => const FeveRunScreen(),
+        },
       ),
     );
   }

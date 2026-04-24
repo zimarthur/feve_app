@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/segmentation_result.dart';
+import 'dart:ui' as ui;
 
 class SegmentationService {
   static const platform = MethodChannel('feve_channel');
@@ -29,9 +32,7 @@ class SegmentationService {
     try {
       final Map<dynamic, dynamic>? payload = await platform.invokeMethod(
         'segmentImage',
-        {
-        'imageBytes': imageBytes,
-      },
+        {'imageBytes': imageBytes},
       );
 
       if (payload == null) {
@@ -41,19 +42,43 @@ class SegmentationService {
       final Uint8List? maskBytes = payload['maskBytes'] as Uint8List?;
       final String? viewClass = payload['viewClass'] as String?;
       final int? inferenceMs = (payload['inferenceMs'] as num?)?.toInt();
+      final int? maskArea = (payload['maskArea'] as num?)?.toInt();
 
-      if (maskBytes == null || viewClass == null || inferenceMs == null) {
+      if (maskBytes == null ||
+          viewClass == null ||
+          inferenceMs == null ||
+          maskArea == null) {
         return null;
       }
+
+      final ui.Image maskImage = await bytesToImage(maskBytes, 256, 256);
 
       return SegmentationResult(
         maskBytes: maskBytes,
         viewClass: viewClass,
         inferenceMs: inferenceMs,
+        maskArea: maskArea,
+        maskImage: maskImage,
       );
     } on PlatformException catch (e) {
       debugPrint("Erro na segmentação: '${e.message}'.");
       return null;
     }
+  }
+
+  Future<ui.Image> bytesToImage(Uint8List rgbaBytes, int width, int height) {
+    final Completer<ui.Image> completer = Completer();
+
+    ui.decodeImageFromPixels(
+      rgbaBytes,
+      width,
+      height,
+      ui.PixelFormat.rgba8888,
+      (ui.Image img) {
+        completer.complete(img);
+      },
+    );
+
+    return completer.future;
   }
 }
