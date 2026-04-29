@@ -7,90 +7,70 @@ class FeveInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.blueGrey[800],
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Text(
-                "Cálculo FEVE",
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              "Cálculo FEVE",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.white70,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getFeveColor(metrics.ejectionFraction).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getFeveColor(metrics.ejectionFraction),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                "${metrics.ejectionFraction.toStringAsFixed(1)}%",
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white70,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: _getFeveColor(metrics.ejectionFraction),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _getFeveColor(
-                    metrics.ejectionFraction,
-                  ).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _getFeveColor(metrics.ejectionFraction),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  "${metrics.ejectionFraction.toStringAsFixed(1)}%",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: _getFeveColor(metrics.ejectionFraction),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
+        ),
 
-          const SizedBox(height: 24),
+        const SizedBox(height: 24),
 
-          // --- BODY: Métricas A2C e A4C ---
-          Row(
-            children: [
-              Expanded(
-                child: _ChamberColumn(title: "Apical 2C", metrics: metrics.a2c),
-              ),
-              Container(
-                height: 80,
-                width: 1,
-                color: Colors.white24,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              Expanded(
-                child: _ChamberColumn(title: "Apical 4C", metrics: metrics.a4c),
-              ),
-            ],
-          ),
+        // --- BODY: Métricas A2C e A4C ---
+        Row(
+          children: [
+            Expanded(
+              child: _ChamberColumn(title: "Apical 2C", metrics: metrics.a2c),
+            ),
+            Container(
+              height: 80,
+              width: 1,
+              color: Colors.white24,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+            Expanded(
+              child: _ChamberColumn(title: "Apical 4C", metrics: metrics.a4c),
+            ),
+          ],
+        ),
 
-          const SizedBox(height: 16),
+        const SizedBox(height: 16),
 
-          // --- ÁREA DE EXPANSÃO (Para futuras informações) ---
-          // Você pode adicionar novos blocos aqui facilmente.
-          // Divider(color: Colors.white12, height: 32),
-          // const Text("Mais Informações...", style: TextStyle(color: Colors.white54)),
-        ],
-      ),
+        // --- ÁREA DE EXPANSÃO (Para futuras informações) ---
+        // Você pode adicionar novos blocos aqui facilmente.
+        // Divider(color: Colors.white12, height: 32),
+        // const Text("Mais Informações...", style: TextStyle(color: Colors.white54)),
+      ],
     );
   }
 

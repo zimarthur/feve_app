@@ -1,10 +1,10 @@
+import 'package:feve_app/viewmodels/patients_view_model.dart';
 import 'package:feve_app/widgets/home_selector_button.dart';
 import 'package:feve_app/widgets/model_selector_bottomsheet.dart';
 import 'package:feve_app/widgets/round_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../viewmodels/frames_view_model.dart';
 import '../viewmodels/model_view_model.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,10 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final modelViewmodel = Provider.of<ModelViewModel>(context);
-    final framesViewmodel = Provider.of<FramesViewModel>(context);
+    final patientsViewmodel = Provider.of<PatientsViewModel>(context);
     bool canProceed =
         modelViewmodel.selectedModel != null &&
-        framesViewmodel.selectedImages.isNotEmpty;
+        patientsViewmodel.patientMap.isNotEmpty;
     return Scaffold(
       backgroundColor: Colors.blueGrey[900],
       body: Padding(
@@ -71,13 +71,13 @@ class _HomeScreenState extends State<HomeScreen> {
               isLoading: modelViewmodel.isLoading,
             ),
             HomeSelectorButton(
-              title: "Imagens",
-              textWhenNull: "Faça upload de imagens",
-              value: framesViewmodel.selectedImages.isNotEmpty
-                  ? "${framesViewmodel.selectedImages.length} imagens selecionadas"
+              title: "Pacientes",
+              textWhenNull: "Faça upload de pacientes",
+              value: patientsViewmodel.patientMap.isNotEmpty
+                  ? "${patientsViewmodel.patientMap.length} pacientes selecionados"
                   : null,
-              onTap: () => framesViewmodel.pickImages(),
-              isLoading: framesViewmodel.isLoading,
+              onTap: () => patientsViewmodel.pickPatients(),
+              isLoading: patientsViewmodel.isLoading,
             ),
             RoundButton(
               onTap: () {

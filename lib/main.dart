@@ -1,6 +1,7 @@
+import 'package:feve_app/controllers/feve_controller.dart';
 import 'package:feve_app/services/segmentation_service.dart';
 import 'package:feve_app/viewmodels/feve_session_view_model.dart';
-import 'package:feve_app/viewmodels/frames_view_model.dart';
+import 'package:feve_app/viewmodels/patients_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/image_picker_service.dart';
@@ -20,6 +21,10 @@ class FeveApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<SegmentationService>(create: (_) => SegmentationService()),
+        Provider<FeveController>(
+          create: (context) =>
+              FeveController(context.read<SegmentationService>()),
+        ),
         Provider<ImagePickerService>(create: (_) => ImagePickerService()),
         ChangeNotifierProvider(
           create: (context) =>
@@ -27,12 +32,12 @@ class FeveApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) =>
-              FramesViewModel(context.read<ImagePickerService>()),
+              PatientsViewModel(context.read<ImagePickerService>()),
         ),
         ChangeNotifierProvider(
           create: (context) => FeveSessionViewModel(
-            context.read<FramesViewModel>(),
-            context.read<SegmentationService>(),
+            context.read<PatientsViewModel>(),
+            context.read<FeveController>(),
           ),
         ),
       ],
