@@ -1,3 +1,4 @@
+import 'package:feve_app/enum/menu.dart';
 import 'package:feve_app/viewmodels/patients_view_model.dart';
 import 'package:feve_app/widgets/feve_info_card.dart';
 import 'package:feve_app/widgets/round_button.dart';
@@ -97,41 +98,111 @@ class _FeveRunScreenState extends State<FeveRunScreen> {
                               ),
                             ],
                           ),
-                          FeveInfoCard(metrics: mockFeveData),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                viewmodel.currentFrame?.bytes != null
-                                    ? Image.memory(
-                                        viewmodel.currentFrame!.bytes!,
-                                        gaplessPlayback: true,
-                                        fit: BoxFit.fitWidth,
-                                        width: double.infinity,
-                                      )
-                                    : const SizedBox(
-                                        width: double.infinity,
-                                        child: Text(
-                                          "Nenhuma imagem carregada.",
-                                          style: TextStyle(color: Colors.white),
-                                          textAlign: TextAlign.center,
-                                        ),
+                          SizedBox(height: 16),
+                          Row(
+                            children: [
+                              for (int i = 0; i < Menu.values.length; i++) ...[
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () {
+                                      viewmodel.setSelectedMenu(Menu.values[i]);
+                                    },
+                                    child: Text(
+                                      Menu.values[i].title,
+                                      style: TextStyle(
+                                        color:
+                                            Menu.values[i] ==
+                                                viewmodel.selectedMenu
+                                            ? Colors.white
+                                            : Colors.grey,
+                                        fontSize: 16,
+                                        fontWeight:
+                                            Menu.values[i] ==
+                                                viewmodel.selectedMenu
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
                                       ),
-
-                                if (viewmodel
-                                        .currentSegmentationResult
-                                        ?.maskImage !=
-                                    null)
-                                  RawImage(
-                                    image: viewmodel
-                                        .currentSegmentationResult!
-                                        .maskImage,
-                                    fit: BoxFit.fitWidth,
-                                    width: double.infinity,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                                if (i < Menu.values.length - 1)
+                                  Container(
+                                    width: 1,
+                                    height: 20,
+                                    color: Colors.grey,
                                   ),
                               ],
-                            ),
+                            ],
+                          ),
+                          SizedBox(height: 16),
+                          Expanded(child: viewmodel.selectedMenu.widget),
+                          SizedBox(height: 16),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return SizedBox(
+                                width: constraints.maxWidth,
+                                height: constraints.maxWidth,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Stack(
+                                    alignment: Alignment.center,
+
+                                    children: [
+                                      viewmodel.currentFrame?.bytes != null
+                                          ? Image.memory(
+                                              viewmodel.currentFrame!.bytes!,
+                                              gaplessPlayback: true,
+                                              fit: BoxFit.fitWidth,
+                                              width: double.infinity,
+                                            )
+                                          : const SizedBox(
+                                              width: double.infinity,
+                                              child: Text(
+                                                "Nenhuma imagem carregada.",
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ),
+
+                                      if (viewmodel
+                                                  .currentSegmentationResult
+                                                  ?.maskImage !=
+                                              null &&
+                                          viewmodel.isShowingMask)
+                                        RawImage(
+                                          image: viewmodel
+                                              .currentSegmentationResult!
+                                              .maskImage,
+                                          fit: BoxFit.fitWidth,
+                                          width: double.infinity,
+                                        ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Align(
+                                          alignment: AlignmentGeometry.topRight,
+                                          child: IconButton.filled(
+                                            onPressed: () =>
+                                                viewmodel.toggleMask(),
+                                            style: IconButton.styleFrom(
+                                              backgroundColor: Colors.blueGrey,
+                                              foregroundColor: Colors.white,
+                                            ),
+                                            icon: Icon(
+                                              viewmodel.isShowingMask
+                                                  ? Icons.visibility
+                                                  : Icons.visibility_off,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -165,85 +236,6 @@ class _FeveRunScreenState extends State<FeveRunScreen> {
                       ),
                     ],
                   ),
-
-                  // SizedBox(
-                  //   height: 50,
-                  //   child: ListView.builder(
-                  //     itemCount: patientsViewmodel.patientIds.length,
-                  //     itemBuilder: (context, index) {
-                  //       final patientId = patientsViewmodel.patientIds[index];
-                  //       return ListTile(
-                  //         title: Text(patientId),
-                  //         onTap: () {
-                  //           viewmodel.selectPatient(patientId);
-                  //         },
-                  //       );
-                  //     },
-                  //   ),
-                  // ),
-                  // FeveInfoCard(metrics: mockFeveData),
-
-                  // SizedBox(
-                  //   width: double.infinity,
-                  //   height: 100,
-                  //   child: ListView.builder(
-                  //     itemCount: viewmodel.segmentationResults.length,
-                  //     scrollDirection: Axis.horizontal,
-                  //     itemBuilder: (context, index) {
-                  //       final res = viewmodel.segmentationResults[index];
-                  //       return InkWell(
-                  //         onTap: () {
-                  //           viewmodel.setFrame(index);
-                  //         },
-                  //         child: Column(
-                  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  //           children: [
-                  //             Text(
-                  //               "${res.maskArea}",
-                  //               style: TextStyle(color: Colors.white, fontSize: 10),
-                  //             ),
-                  //             Container(
-                  //               margin: const EdgeInsets.symmetric(horizontal: 8),
-                  //               color: Colors.white,
-                  //               height: res.maskArea.toDouble() / 100,
-                  //               width: 15,
-                  //             ),
-                  //           ],
-                  //         ),
-                  //       );
-                  //     },
-                  //   ),
-                  // ),
-                  // ClipRRect(
-                  //   borderRadius: BorderRadius.circular(16),
-                  //   child: Stack(
-                  //     alignment: Alignment.center,
-                  //     children: [
-                  //       viewmodel.currentFrame?.bytes != null
-                  //           ? Image.memory(
-                  //               viewmodel.currentFrame!.bytes!,
-                  //               gaplessPlayback: true,
-                  //               fit: BoxFit.fitWidth,
-                  //               width: double.infinity,
-                  //             )
-                  //           : const SizedBox(
-                  //               width: double.infinity,
-                  //               child: Text(
-                  //                 "Nenhuma imagem carregada.",
-                  //                 style: TextStyle(color: Colors.white),
-                  //                 textAlign: TextAlign.center,
-                  //               ),
-                  //             ),
-
-                  //       if (viewmodel.currentSegmentationResult?.maskImage != null)
-                  //         RawImage(
-                  //           image: viewmodel.currentSegmentationResult!.maskImage,
-                  //           fit: BoxFit.fitWidth,
-                  //           width: double.infinity,
-                  //         ),
-                  //     ],
-                  //   ),
-                  // ),
                 ],
               ),
       ),

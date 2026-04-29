@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:feve_app/controllers/feve_controller.dart';
+import 'package:feve_app/enum/menu.dart';
 import 'package:feve_app/models/patient.dart';
 import 'package:feve_app/viewmodels/patients_view_model.dart';
 import 'package:flutter/material.dart';
@@ -31,10 +32,14 @@ class FeveSessionViewModel extends ChangeNotifier {
   }
 
   bool isLoading = false;
+  bool isShowingMask = true;
+
+  Menu selectedMenu = Menu.data;
 
   Future<void> selectPatient(String patientId) async {
     if (_patientsViewModel.patientIds.contains(patientId)) {
       isLoading = true;
+      _isPlaying = false;
       notifyListeners();
       selectedPatient = _patientsViewModel.patientMap[patientId];
       await loadFrameBytes(selectedPatient!.view2CH);
@@ -72,8 +77,20 @@ class FeveSessionViewModel extends ChangeNotifier {
     segmentationsResults[selectedPatient!.id]?.clear();
     notifyListeners();
 
-    final frameDuration = Duration(milliseconds: 1000 ~/ fps);
-    for (int x = 0; x < 1; x++) {
+    isShowing2CH = true;
+    await loopFrames();
+    isShowing2CH = false;
+    await loopFrames();
+
+    _isPlaying = false;
+    notifyListeners();
+  }
+
+  Future<void> loopFrames() async {
+    final frameDuration = Duration(
+      milliseconds: 1000 ~/ currentView!.metadata!.frameRate,
+    );
+    for (int x = 0; x < 5; x++) {
       for (int i = 0; i < currentView!.frames.length; i++) {
         if (!_isPlaying) break;
         frameIndex = i;
@@ -82,7 +99,7 @@ class FeveSessionViewModel extends ChangeNotifier {
           currentView!.frames[i],
         );
 
-        segmentationsResults[selectedPatient!.id]![currentView!
+        segmentationsResults[selectedPatient?.id]?[currentView!
                 .frames[i]
                 .path] =
             feveStatus.segmentationResult!;
@@ -91,9 +108,6 @@ class FeveSessionViewModel extends ChangeNotifier {
         await Future.delayed(frameDuration);
       }
     }
-
-    _isPlaying = false;
-    notifyListeners();
   }
 
   void stop() {
@@ -132,5 +146,15 @@ class FeveSessionViewModel extends ChangeNotifier {
     if (currentIndex > 0) {
       selectPatient(_patientsViewModel.patientIds[currentIndex - 1]);
     }
+  }
+
+  void toggleMask() {
+    isShowingMask = !isShowingMask;
+    notifyListeners();
+  }
+
+  void setSelectedMenu(Menu menu) {
+    selectedMenu = menu;
+    notifyListeners();
   }
 }
