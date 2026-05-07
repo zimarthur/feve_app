@@ -1,7 +1,6 @@
 import 'package:feve_app/enum/menu.dart';
 import 'package:feve_app/viewmodels/patients_view_model.dart';
-import 'package:feve_app/widgets/feve_info_card.dart';
-import 'package:feve_app/widgets/round_button.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -137,73 +136,77 @@ class _FeveRunScreenState extends State<FeveRunScreen> {
                           ),
                           SizedBox(height: 16),
                           Expanded(child: viewmodel.selectedMenu.widget),
-                          SizedBox(height: 16),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              return SizedBox(
-                                width: constraints.maxWidth,
-                                height: constraints.maxWidth,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Stack(
-                                    alignment: Alignment.center,
+                          if (!viewmodel.selectedMenu.shouldHideFrame) ...[
+                            SizedBox(height: 16),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                return SizedBox(
+                                  width: constraints.maxWidth,
+                                  height: constraints.maxWidth,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Stack(
+                                      alignment: Alignment.center,
 
-                                    children: [
-                                      viewmodel.currentFrame?.bytes != null
-                                          ? Image.memory(
-                                              viewmodel.currentFrame!.bytes!,
-                                              gaplessPlayback: true,
-                                              fit: BoxFit.fitWidth,
-                                              width: double.infinity,
-                                            )
-                                          : const SizedBox(
-                                              width: double.infinity,
-                                              child: Text(
-                                                "Nenhuma imagem carregada.",
-                                                style: TextStyle(
-                                                  color: Colors.white,
+                                      children: [
+                                        viewmodel.currentFrame?.bytes != null
+                                            ? Image.memory(
+                                                viewmodel.currentFrame!.bytes!,
+                                                gaplessPlayback: true,
+                                                fit: BoxFit.fitWidth,
+                                                width: double.infinity,
+                                              )
+                                            : const SizedBox(
+                                                width: double.infinity,
+                                                child: Text(
+                                                  "Nenhuma imagem carregada.",
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                  ),
+                                                  textAlign: TextAlign.center,
                                                 ),
-                                                textAlign: TextAlign.center,
                                               ),
-                                            ),
 
-                                      if (viewmodel
-                                                  .currentSegmentationResult
-                                                  ?.maskImage !=
-                                              null &&
-                                          viewmodel.isShowingMask)
-                                        RawImage(
-                                          image: viewmodel
-                                              .currentSegmentationResult!
-                                              .maskImage,
-                                          fit: BoxFit.fitWidth,
-                                          width: double.infinity,
-                                        ),
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Align(
-                                          alignment: AlignmentGeometry.topRight,
-                                          child: IconButton.filled(
-                                            onPressed: () =>
-                                                viewmodel.toggleMask(),
-                                            style: IconButton.styleFrom(
-                                              backgroundColor: Colors.blueGrey,
-                                              foregroundColor: Colors.white,
-                                            ),
-                                            icon: Icon(
-                                              viewmodel.isShowingMask
-                                                  ? Icons.visibility
-                                                  : Icons.visibility_off,
+                                        if (viewmodel
+                                                    .currentSegmentationResult
+                                                    ?.maskImage !=
+                                                null &&
+                                            viewmodel.isShowingMask)
+                                          RawImage(
+                                            image: viewmodel
+                                                .currentSegmentationResult!
+                                                .maskImage,
+                                            fit: BoxFit.fitWidth,
+                                            width: double.infinity,
+                                          ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Align(
+                                            alignment:
+                                                AlignmentGeometry.topRight,
+                                            child: IconButton.filled(
+                                              onPressed: () =>
+                                                  viewmodel.toggleMask(),
+                                              style: IconButton.styleFrom(
+                                                backgroundColor:
+                                                    Colors.blueGrey,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              icon: Icon(
+                                                viewmodel.isShowingMask
+                                                    ? Icons.visibility
+                                                    : Icons.visibility_off,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
+                                );
+                              },
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -212,7 +215,18 @@ class _FeveRunScreenState extends State<FeveRunScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(),
+                      IconButton.filled(
+                        style: IconButton.styleFrom(
+                          backgroundColor: viewmodel.isPlayingAllPatients
+                              ? Colors.white
+                              : Colors.lightBlueAccent,
+                          foregroundColor: viewmodel.isPlayingAllPatients
+                              ? Colors.lightBlueAccent
+                              : Colors.white,
+                        ),
+                        onPressed: () => viewmodel.runOnAllPatients(),
+                        icon: Icon(Icons.playlist_add_check_circle),
+                      ),
                       Row(
                         children: [
                           IconButton.filled(

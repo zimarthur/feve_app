@@ -1,3 +1,4 @@
+import 'package:feve_app/widgets/feve_evaluation.dart';
 import 'package:feve_app/widgets/frames_list.dart';
 import 'package:feve_app/widgets/patient_card.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,16 @@ extension MenuExtension on Menu {
       case Menu.frames:
         return FramesList();
       case Menu.feve:
-        return Placeholder();
+        return FeveEvaluation();
+    }
+  }
+
+  bool get shouldHideFrame {
+    switch (this) {
+      case Menu.feve:
+        return true;
+      default:
+        return false;
     }
   }
 }

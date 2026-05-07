@@ -115,8 +115,8 @@ class ImageSegmentationHelper(private val context: Context) {
             
             // Processa a classe (Sigmoid: > 0.5 é uma classe, <= 0.5 é a outra)
             // IMPORTANTE: Ajuste qual é A2C e qual é A4C dependendo de como você treinou seus labels no Python!
-            val classProb = classFloatArray!![0]
-            val predictedClass = if (classProb > 0.5f) "A4C" else "A2C" 
+            val classProb = classFloatArray?.get(0) ?: 0F
+            val predictedClass = if (classProb > 0.5f) "A4C" else "A2C"
             
             Log.d(tag, "Tempo de pós-processamento REAL: ${SystemClock.uptimeMillis() - postprocessStartTime} ms")
             Log.d(tag, "Classe predita: $predictedClass (Probabilidade: $classProb)")

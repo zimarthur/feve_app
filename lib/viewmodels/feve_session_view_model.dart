@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:feve_app/controllers/feve_controller.dart';
 import 'package:feve_app/enum/menu.dart';
+import 'package:feve_app/models/feve_result.dart';
 import 'package:feve_app/models/patient.dart';
 import 'package:feve_app/viewmodels/patients_view_model.dart';
 import 'package:flutter/material.dart';
@@ -59,22 +60,30 @@ class FeveSessionViewModel extends ChangeNotifier {
     }
   }
 
-  Map<String, Map<String, SegmentationResult>> segmentationsResults = {};
+  Map<String, FeveResult> segmentationsResults = {};
 
+  FeveResult? get currentFeveResult =>
+      segmentationsResults[selectedPatient?.id];
   SegmentationResult? get currentSegmentationResult =>
-      segmentationsResults[selectedPatient?.id]?[currentFrame?.path];
+      currentFeveResult?.segmentationResults[currentFrame?.path];
 
   final int fps = 1;
   bool _isPlaying = false;
   bool get isPlaying => _isPlaying;
 
-  void play() async {
+  bool _isPlayingAllPatients = false;
+  bool get isPlayingAllPatients => _isPlayingAllPatients;
+
+  Future<void> play() async {
     if (currentView?.frames.isEmpty == true || _isPlaying) return;
 
     _isPlaying = true;
     _feveController.reset();
-    segmentationsResults.putIfAbsent(selectedPatient!.id, () => {});
-    segmentationsResults[selectedPatient!.id]?.clear();
+    segmentationsResults.putIfAbsent(
+      selectedPatient!.id,
+      () => FeveResult(segmentationResults: {}),
+    );
+    segmentationsResults[selectedPatient!.id]?.segmentationResults.clear();
     notifyListeners();
 
     isShowing2CH = true;
@@ -82,6 +91,20 @@ class FeveSessionViewModel extends ChangeNotifier {
     isShowing2CH = false;
     await loopFrames();
 
+    final a2cMin = _feveController.minResults['A2C'];
+    final a2cMax = _feveController.maxResults['A2C'];
+    final a4cMin = _feveController.minResults['A4C'];
+    final a4cMax = _feveController.maxResults['A4C'];
+    if (a2cMin != null && a2cMax != null && a4cMin != null && a4cMax != null) {
+      segmentationsResults[selectedPatient!.id]?.minResults = {
+        'A2C': a2cMin,
+        'A4C': a4cMin,
+      };
+      segmentationsResults[selectedPatient!.id]?.maxResults = {
+        'A2C': a2cMax,
+        'A4C': a4cMax,
+      };
+    }
     _isPlaying = false;
     notifyListeners();
   }
@@ -90,7 +113,7 @@ class FeveSessionViewModel extends ChangeNotifier {
     final frameDuration = Duration(
       milliseconds: 1000 ~/ currentView!.metadata!.frameRate,
     );
-    for (int x = 0; x < 5; x++) {
+    for (int x = 0; x < 1; x++) {
       for (int i = 0; i < currentView!.frames.length; i++) {
         if (!_isPlaying) break;
         frameIndex = i;
@@ -98,10 +121,9 @@ class FeveSessionViewModel extends ChangeNotifier {
           selectedPatient!.id,
           currentView!.frames[i],
         );
-
-        segmentationsResults[selectedPatient?.id]?[currentView!
-                .frames[i]
-                .path] =
+        print("TEST ${feveStatus.segmentationResult?.viewClass}");
+        segmentationsResults[selectedPatient?.id]
+                ?.segmentationResults[currentView!.frames[i].path] =
             feveStatus.segmentationResult!;
 
         notifyListeners();
@@ -129,6 +151,12 @@ class FeveSessionViewModel extends ChangeNotifier {
   }
 
   void goToNextPatient() {
+    double totalSum = 0;
+    for (var res in segmentationsResults.values) {
+      totalSum += res.meanInfTime;
+      print("RESULTS: ${res.meanInfTime}");
+    }
+    print("TOTAL SUM: ${totalSum / segmentationsResults.length}");
     if (selectedPatient == null) return;
     final currentIndex = _patientsViewModel.patientIds.indexOf(
       selectedPatient!.id,
@@ -155,6 +183,23 @@ class FeveSessionViewModel extends ChangeNotifier {
 
   void setSelectedMenu(Menu menu) {
     selectedMenu = menu;
+    notifyListeners();
+  }
+
+  Future<void> runOnAllPatients() async {
+    if (isPlayingAllPatients) {
+      _isPlayingAllPatients = false;
+      notifyListeners();
+      return;
+    }
+    if (_isPlaying || isLoading) return;
+    _isPlayingAllPatients = true;
+    notifyListeners();
+    for (final patientId in _patientsViewModel.patientIds) {
+      await selectPatient(patientId);
+      await play();
+    }
+    _isPlayingAllPatients = false;
     notifyListeners();
   }
 }
