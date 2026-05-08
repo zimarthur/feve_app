@@ -1,12 +1,8 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'dart:typed_data';
 
-class LongAxisData {
-  final Offset apex;
-  final Offset baseCenter;
-
-  LongAxisData({required this.apex, required this.baseCenter});
-}
+import 'long_axis_data.dart';
 
 class VentricleGeometryExtractor {
   static const int imageSize = 256;
@@ -86,5 +82,115 @@ class VentricleGeometryExtractor {
     }
 
     return LongAxisData(apex: apex, baseCenter: baseCenter);
+  }
+
+  static List<VentricleDisk> extractDisks({
+    required Offset apex,
+    required Offset baseCenter,
+    required Uint8List maskBytes,
+    int maskWidth = 256,
+    int maskHeight = 256,
+    int numberOfDisks = 20,
+  }) {
+    List<VentricleDisk> disks = [];
+
+    double dx = baseCenter.dx - apex.dx;
+    double dy = baseCenter.dy - apex.dy;
+    double axisLength = math.sqrt(dx * dx + dy * dy);
+
+    Offset direction = baseCenter - apex;
+    Offset normal = Offset(-direction.dy, direction.dx);
+    double length = normal.distance;
+    Offset unitNormal = normal / length;
+    Offset oppositeUnitNormal = -unitNormal;
+
+    if (axisLength == 0) return disks;
+
+    for (int disk = 0; disk < numberOfDisks; disk++) {
+      double pointMiddlePercentage = ((2 * disk + 1) / (2 * numberOfDisks))
+          .abs();
+      double xCenter =
+          baseCenter.dx + pointMiddlePercentage * (apex.dx - baseCenter.dx);
+      double yCenter =
+          baseCenter.dy + pointMiddlePercentage * (apex.dy - baseCenter.dy);
+      Offset center = Offset(xCenter, yCenter);
+      double radius1 = findRadius(
+        center,
+        unitNormal,
+        maskBytes,
+        maskWidth,
+        maskHeight,
+      );
+      double radius2 = findRadius(
+        center,
+        oppositeUnitNormal,
+        maskBytes,
+        maskWidth,
+        maskHeight,
+      );
+
+      Offset left = center + (unitNormal * radius1);
+      Offset right = center + (oppositeUnitNormal * radius2);
+      disks.add(
+        VentricleDisk(
+          point1: left,
+          point2: right,
+          diameter: (left - right).distance,
+        ),
+      );
+    }
+    return disks;
+  }
+
+  static double findRadius(
+    Offset centerPoint,
+    Offset unitNormal,
+    Uint8List mask,
+    int width,
+    int height,
+  ) {
+    double minRadius = 0.0;
+    double maxRadius = width.toDouble();
+    double threshold = 1;
+
+    int centerX = centerPoint.dx.round();
+    int centerY = centerPoint.dy.round();
+
+    if (centerX >= 0 && centerX < width && centerY >= 0 && centerY < height) {
+      int centerBaseIndex = ((centerY * width) + centerX) * 4;
+
+      int centerOpacity = mask[centerBaseIndex + 3];
+
+      if (centerOpacity == 0) {
+        return 0.0;
+      }
+    }
+
+    double currentRadius = maxRadius;
+    while ((maxRadius - minRadius) > threshold) {
+      currentRadius = minRadius + (maxRadius - minRadius) / 2;
+
+      Offset checkPoint = centerPoint + (unitNormal * currentRadius);
+
+      int x = checkPoint.dx.round();
+      int y = checkPoint.dy.round();
+
+      if (x < 0 || x >= width || y < 0 || y >= height) {
+        maxRadius = currentRadius;
+        continue;
+      }
+
+      int baseIndex = ((y * width) + x) * 4;
+
+      int pixelOpacity = mask[baseIndex + 3];
+
+      if (pixelOpacity > 0) {
+        minRadius = currentRadius;
+      } else {
+        maxRadius = currentRadius;
+      }
+    }
+
+    return currentRadius;
   }
 }

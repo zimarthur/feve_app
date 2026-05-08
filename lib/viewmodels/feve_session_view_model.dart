@@ -37,6 +37,21 @@ class FeveSessionViewModel extends ChangeNotifier {
 
   Menu selectedMenu = Menu.data;
 
+  Map<String, SegmentationResult> segmentationsResults = {};
+
+  SegmentationResult? get currentSegmentationResult =>
+      segmentationsResults[currentFrame?.path];
+
+  Map<String, FeveResult> feveResults = {};
+  FeveResult? get currentFeveResult => feveResults[selectedPatient?.id];
+
+  final int fps = 1;
+  bool _isPlaying = false;
+  bool get isPlaying => _isPlaying;
+
+  bool _isPlayingAllPatients = false;
+  bool get isPlayingAllPatients => _isPlayingAllPatients;
+
   Future<void> selectPatient(String patientId) async {
     if (_patientsViewModel.patientIds.contains(patientId)) {
       isLoading = true;
@@ -60,30 +75,13 @@ class FeveSessionViewModel extends ChangeNotifier {
     }
   }
 
-  Map<String, FeveResult> segmentationsResults = {};
-
-  FeveResult? get currentFeveResult =>
-      segmentationsResults[selectedPatient?.id];
-  SegmentationResult? get currentSegmentationResult =>
-      currentFeveResult?.segmentationResults[currentFrame?.path];
-
-  final int fps = 1;
-  bool _isPlaying = false;
-  bool get isPlaying => _isPlaying;
-
-  bool _isPlayingAllPatients = false;
-  bool get isPlayingAllPatients => _isPlayingAllPatients;
-
   Future<void> play() async {
     if (currentView?.frames.isEmpty == true || _isPlaying) return;
 
     _isPlaying = true;
     _feveController.reset();
-    segmentationsResults.putIfAbsent(
-      selectedPatient!.id,
-      () => FeveResult(segmentationResults: {}),
-    );
-    segmentationsResults[selectedPatient!.id]?.segmentationResults.clear();
+
+    segmentationsResults.clear();
     notifyListeners();
 
     isShowing2CH = true;
@@ -91,20 +89,8 @@ class FeveSessionViewModel extends ChangeNotifier {
     isShowing2CH = false;
     await loopFrames();
 
-    final a2cMin = _feveController.minResults['A2C'];
-    final a2cMax = _feveController.maxResults['A2C'];
-    final a4cMin = _feveController.minResults['A4C'];
-    final a4cMax = _feveController.maxResults['A4C'];
-    if (a2cMin != null && a2cMax != null && a4cMin != null && a4cMax != null) {
-      segmentationsResults[selectedPatient!.id]?.minResults = {
-        'A2C': a2cMin,
-        'A4C': a4cMin,
-      };
-      segmentationsResults[selectedPatient!.id]?.maxResults = {
-        'A2C': a2cMax,
-        'A4C': a4cMax,
-      };
-    }
+    final feveResult = await _feveController.onFinishCycle();
+    feveResults[selectedPatient!.id] = feveResult;
     _isPlaying = false;
     notifyListeners();
   }
@@ -122,8 +108,7 @@ class FeveSessionViewModel extends ChangeNotifier {
           currentView!.frames[i],
         );
         print("TEST ${feveStatus.segmentationResult?.viewClass}");
-        segmentationsResults[selectedPatient?.id]
-                ?.segmentationResults[currentView!.frames[i].path] =
+        segmentationsResults[currentView!.frames[i].path] =
             feveStatus.segmentationResult!;
 
         notifyListeners();
@@ -151,12 +136,6 @@ class FeveSessionViewModel extends ChangeNotifier {
   }
 
   void goToNextPatient() {
-    double totalSum = 0;
-    for (var res in segmentationsResults.values) {
-      totalSum += res.meanInfTime;
-      print("RESULTS: ${res.meanInfTime}");
-    }
-    print("TOTAL SUM: ${totalSum / segmentationsResults.length}");
     if (selectedPatient == null) return;
     final currentIndex = _patientsViewModel.patientIds.indexOf(
       selectedPatient!.id,
@@ -200,6 +179,12 @@ class FeveSessionViewModel extends ChangeNotifier {
       await play();
     }
     _isPlayingAllPatients = false;
+    notifyListeners();
+  }
+
+  Future<void> refreshResults() async {
+    final feveResult = await _feveController.onFinishCycle();
+    feveResults[selectedPatient!.id] = feveResult;
     notifyListeners();
   }
 }

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
-import '../geometry_extraction.dart';
+import '../left_ventricule_data.dart';
 
 class LongAxisPainter extends CustomPainter {
   final ui.Image maskImage;
-  final LongAxisData longAxisData;
+  final LeftVentriculeData leftVentriculeData;
 
-  LongAxisPainter({required this.maskImage, required this.longAxisData});
+  LongAxisPainter({required this.maskImage, required this.leftVentriculeData});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -30,12 +30,12 @@ class LongAxisPainter extends CustomPainter {
 
     // 3. Multiplicar as coordenadas calculadas pelo fator de escala
     final scaledApex = Offset(
-      longAxisData.apex.dx * scaleX,
-      longAxisData.apex.dy * scaleY,
+      leftVentriculeData.longAxisData.apex.dx * scaleX,
+      leftVentriculeData.longAxisData.apex.dy * scaleY,
     );
     final scaledBaseCenter = Offset(
-      longAxisData.baseCenter.dx * scaleX,
-      longAxisData.baseCenter.dy * scaleY,
+      leftVentriculeData.longAxisData.baseCenter.dx * scaleX,
+      leftVentriculeData.longAxisData.baseCenter.dy * scaleY,
     );
 
     // 4. Configurar pincéis
@@ -48,14 +48,47 @@ class LongAxisPainter extends CustomPainter {
       ..color = Colors.red
       ..style = PaintingStyle.fill;
 
+    // Desenha o eixo longo
     canvas.drawLine(scaledApex, scaledBaseCenter, linePaint);
     canvas.drawCircle(scaledApex, 2.0, dotPaint);
     canvas.drawCircle(scaledBaseCenter, 2.0, dotPaint);
+
+    // 5. Desenhar apenas o primeiro disco (se existir)
+    for (
+      int diskIndex = 0;
+      diskIndex < leftVentriculeData.longAxisData.disks.length;
+      diskIndex++
+    ) {
+      final disk = leftVentriculeData.longAxisData.disks[diskIndex];
+
+      // Aplica a mesma escala nos pontos do disco
+      final scaledPoint1 = Offset(
+        disk.point1.dx * scaleX,
+        disk.point1.dy * scaleY,
+      );
+      final scaledPoint2 = Offset(
+        disk.point2.dx * scaleX,
+        disk.point2.dy * scaleY,
+      );
+
+      final diskPaint = Paint()
+        ..color = Colors
+            .blue // Azul para diferenciar do eixo longo
+        ..strokeWidth = 1.5
+        ..style = PaintingStyle.stroke;
+
+      // Desenha a linha representando o disco¼
+      canvas.drawLine(scaledPoint1, scaledPoint2, diskPaint);
+
+      // Desenha as bolinhas nas bordas da máscara para esse disco
+      canvas.drawCircle(scaledPoint1, 2.0, dotPaint);
+      canvas.drawCircle(scaledPoint2, 2.0, dotPaint);
+    }
   }
 
   @override
   bool shouldRepaint(covariant LongAxisPainter oldDelegate) {
     return oldDelegate.maskImage != maskImage ||
-        oldDelegate.longAxisData != longAxisData;
+        oldDelegate.leftVentriculeData != leftVentriculeData;
   }
 }
